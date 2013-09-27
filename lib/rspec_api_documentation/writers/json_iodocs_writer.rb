@@ -4,7 +4,7 @@ module RspecApiDocumentation
   module Writers
     class JsonIodocsWriter
       attr_accessor :index, :configuration, :api_key
-      delegate :docs_dir, :to => :configuration
+      delegate :docs_dir, to: :configuration
 
       def initialize(index, configuration)
         self.index = index
@@ -42,10 +42,10 @@ module RspecApiDocumentation
       end
 
       def as_json(opts = nil)
-        sections.inject({:endpoints => []}) do |h, section|
+        sections.inject({endpoints: []}) do |h, section|
           h[:endpoints].push(
-            :name => section[:resource_name],
-            :methods => section[:examples].map do |example|
+            name: section[:resource_name],
+            methods: section[:examples].map do |example|
               example.as_json(opts)
             end
           )
@@ -66,46 +66,96 @@ module RspecApiDocumentation
       def parameters
         params = []
         if @example.respond_to?(:parameters)
-          @example.parameters.map do |param|
-            params << {
-              "Name" => param[:name],
-              "Description" => param[:description],
-              "Default" => "",
-              "Required" => param[:required] ? "Y" : "N"
-            }
+          @example.parameters.each do |param|
+            if param.has_key?(:scope)
+              @content_holder = @content_holder || {}
+              current_scope = param[:scope]
+              @content_holder[current_scope] = @content_holder[current_scope] || []
+              @content_holder[current_scope] << param
+            else
+              params << {
+                Name:        param[:name],
+                Description: param[:description],
+                Default:     "",
+                Required:    param[:required] ? "Y" : "N",
+                Type:        "string"                             #TODO fix hard coded type
+              }
+            end
           end
         end
         params
       end
 
+      def content
+        if @content.nil?
+          @content = {}
+          @content[:contentType] = ["application/json"]
+          @content[:parameters] = []
+        end
+        @content_holder.each do |key, value|
+          container = {
+              Name: key,
+              Type: "object",                                #TODO fix hard coded type
+              parameters: []
+          }
+          value.each do |param|
+            container[:parameters] << {
+
+                Name:        param[:name],
+                Description: param[:description],
+                Default:     "",
+                Required:    param[:required] ? "Y" : "N",
+                Type:        "string"                         #TODO fix hard coded type
+
+            }
+          end
+          @content[:parameters] << container
+        end
+        @content
+      end
+
+
       def as_json(opts = nil)
-         {
-          :MethodName => description,
-          :Synopsis => explanation,
-          :HTTPMethod => http_method,
-          :URI => (requests.first[:request_path] rescue ""),
-          :RequiresOAuth => "N",
-          :parameters => parameters
-        }
+        if parameters.empty?
+          {
+              MethodName:    description,
+              Synopsis:      explanation,
+              HTTPMethod:    http_method,
+              URI:           (requests.first[:request_path] rescue ""),
+              RequiresOAuth: "N",
+              content:       content
+          }
+        else
+          {
+              MethodName:    description,
+              Synopsis:      explanation,
+              HTTPMethod:    http_method,
+              URI:           (requests.first[:request_path] rescue ""),
+              RequiresOAuth: "N",
+              parameters:    parameters,
+              content:       content
+          }
+        end
       end
     end
 
     class ApiConfig
       def initialize(configuration)
         @configuration = configuration
-        @api_key = configuration.api_name.parameterize
+        @api_key       = configuration.api_name.parameterize
       end
 
       def as_json(opts = nil)
         {
           @api_key.to_sym => {
-            :name => @configuration.api_name,
-            :protocol => @configuration.io_docs_protocol,
-            :publicPath => "",
-            :baseURL => @configuration.curl_host
+            name:       @configuration.api_name,
+            protocol:   @configuration.io_docs_protocol,
+            publicPath: "",
+            baseURL:    @configuration.curl_host
           }
         }
       end
     end
   end
 end
+
