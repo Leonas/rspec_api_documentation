@@ -18,9 +18,9 @@ module RspecApiDocumentation
       end
 
       def write
-        File.open(docs_dir.join("apiconfig.json"), "w+") do |file|
-          file.write Formatter.to_json(ApiConfig.new(configuration))
-        end
+        #File.open(docs_dir.join("apiconfig.json"), "w+") do |file|           #make it check if this api is in the apiconfig.json.
+        #  file.write Formatter.to_json(ApiConfig.new(configuration))         #add it if not, else do nothing
+        #end
         File.open(docs_dir.join("#{api_key}.json"), "w+") do |file|
           file.write Formatter.to_json(JsonIndex.new(index, configuration))
         end

@@ -78,6 +78,9 @@ RspecApiDocumentation.configure do |config|
   
   # Output folder
   config.docs_dir = Rails.root.join("doc", "api")
+
+  # Clear the output folder on each run
+  config.clear_directory = true
   
   # An array of output format(s). Possible values are :json, :html
   config.format = [:html]

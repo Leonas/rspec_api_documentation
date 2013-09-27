@@ -2,7 +2,7 @@ module RspecApiDocumentation
   class ApiDocumentation
     attr_reader :configuration, :index
 
-    delegate :docs_dir, :format, :to => :configuration
+    delegate :docs_dir, :format, :clear_directory, :to => :configuration
 
     def initialize(configuration)
       @configuration = configuration
@@ -10,7 +10,7 @@ module RspecApiDocumentation
     end
 
     def clear_docs
-      if File.exists?(docs_dir)
+      if File.exists?(docs_dir)  && clear_directory
         FileUtils.rm_rf(docs_dir, :secure => true)
       end
       FileUtils.mkdir_p(docs_dir)
